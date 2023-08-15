@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.VisualBasic;
 
 namespace CollegeWebsiteAdmin.Models
 {
 
-    public class MyDBContext: DbContext
+    public class MyDBContext : DbContext
     {
         private readonly IConfiguration _myAppSettingsConfig;
         public MyDBContext(IConfiguration configFromAppSettings)
@@ -19,7 +20,9 @@ namespace CollegeWebsiteAdmin.Models
                 optionsBuilder.UseSqlServer(_myAppSettingsConfig.GetConnectionString("ABCDatabase"));
             }
         }
-
-
+        public DbSet<PagesInfo> PagesInfo { get; set; }
+        public DbSet<CoursesInfo> CoursesInfo { get; set; }
+        public DbSet<NewsInfo> NewsInfo { get; set; }
+        public DbSet<ContactFormInfo> ContactFormInfo { get; set; }
     }
 }
