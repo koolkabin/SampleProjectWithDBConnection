@@ -12,18 +12,20 @@ namespace CollegeWebsiteAdmin.Controllers
     public class PagesController : Controller
     {
         private readonly MyDBContext _context;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public PagesController(MyDBContext context)
+        public PagesController(MyDBContext context, IWebHostEnvironment webHostEnvironment)
         {
             _context = context;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         // GET: Pages
         public async Task<IActionResult> Index()
         {
-              return _context.PagesInfo != null ? 
-                          View(await _context.PagesInfo.ToListAsync()) :
-                          Problem("Entity set 'MyDBContext.PagesInfo'  is null.");
+            return _context.PagesInfo != null ?
+                        View(await _context.PagesInfo.ToListAsync()) :
+                        Problem("Entity set 'MyDBContext.PagesInfo'  is null.");
         }
 
         // GET: Pages/Details/5
@@ -55,8 +57,18 @@ namespace CollegeWebsiteAdmin.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title,Content,MainImage")] PagesInfo pagesInfo)
+        public async Task<IActionResult> Create([Bind("Id,Title,Content,MainImage")] PagesInfo pagesInfo,
+            IFormFile FileImage)
         {
+            //save captured to server drive location
+            // Upload the image file
+            //string imageFilePath = @"C:\Path\To\Your\Image.jpg"; // Replace with the actual file path
+            string uploadedPath = await UPloadHelper(FileImage);
+            pagesInfo.MainImage = uploadedPath;
+
+            ModelState.Clear();
+            TryValidateModel(pagesInfo);
+
             if (ModelState.IsValid)
             {
                 _context.Add(pagesInfo);
@@ -64,6 +76,31 @@ namespace CollegeWebsiteAdmin.Controllers
                 return RedirectToAction(nameof(Index));
             }
             return View(pagesInfo);
+        }
+
+        private async Task<string> UPloadHelper(IFormFile FileImage)
+        {
+
+            //File UPload 
+            string fileName = FileImage.FileName;
+
+            string destinationPath = Path.Combine(_webHostEnvironment.WebRootPath, "private");
+
+            //if folder exists or not check 
+            //if no then we can cretae it also
+            if (!Directory.Exists(destinationPath))
+            {
+                Directory.CreateDirectory(destinationPath);
+            }
+
+            string filePath = Path.Combine(destinationPath, fileName);
+
+            // Save the uploaded file
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await FileImage.CopyToAsync(stream);
+            }
+            return fileName;
         }
 
         // GET: Pages/Edit/5
@@ -149,14 +186,14 @@ namespace CollegeWebsiteAdmin.Controllers
             {
                 _context.PagesInfo.Remove(pagesInfo);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool PagesInfoExists(int id)
         {
-          return (_context.PagesInfo?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.PagesInfo?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }
